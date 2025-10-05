@@ -1,6 +1,6 @@
 {
   "name": "xypriss-cli",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "XyPriss CLI - Command-line tool for XyPriss framework project initialization and management",
   "main": "index.js",
   "bin": {

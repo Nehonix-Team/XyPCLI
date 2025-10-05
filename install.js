@@ -4,118 +4,153 @@
  * XyPriss CLI Installer
  *
  * This script automatically downloads the appropriate XyPCLI binary
- * for the current platform from GitHub releases.
+ * for the current platform from the Nehonix SDK.
  */
 
-const https = require('https');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const os = require('os');
-const { execSync } = require('child_process');
+const https = require("https");
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const { execSync } = require("child_process");
 
-// GitHub repository information
-const GITHUB_REPO = 'Nehonix-Team/XyPCLI';
-const GITHUB_API_URL = `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`;
+// Nehonix SDK download URLs
+const SDK_BASE_URL = "https://sdk.nehonix.space/dl/mds/xypriss/bin/xypcli";
 
 // Colors for output
 const colors = {
-  reset: '\x1b[0m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m'
+  reset: "\x1b[0m",
+  red: "\x1b[31m",
+  green: "\x1b[32m",
+  yellow: "\x1b[33m",
+  blue: "\x1b[34m",
+  magenta: "\x1b[35m",
+  cyan: "\x1b[36m",
 };
 
-function log(message, color = 'reset') {
+function log(message, color = "reset") {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
 function error(message) {
-  log(`❌ Error: ${message}`, 'red');
+  log(`❌ Error: ${message}`, "red");
 }
 
 function success(message) {
-  log(`✅ ${message}`, 'green');
+  log(`✅ ${message}`, "green");
 }
 
 function info(message) {
-  log(`ℹ️  ${message}`, 'blue');
+  log(`ℹ️  ${message}`, "blue");
 }
 
-// Detect platform and architecture
+// Detect platform and construct download URL
 function detectPlatform() {
   const platform = os.platform();
   const arch = os.arch();
 
-  let osName;
   let binaryName;
 
   switch (platform) {
-    case 'darwin':
-      osName = 'darwin';
-      binaryName = arch === 'arm64' ? 'xypcli-darwin-arm64' : 'xypcli-darwin-amd64';
+    case "darwin":
+      binaryName =
+        arch === "arm64" ? "xypcli-darwin-arm64" : "xypcli-darwin-amd64";
       break;
-    case 'linux':
-      osName = 'linux';
-      binaryName = arch === 'arm64' ? 'xypcli-linux-arm64' : 'xypcli-linux-amd64';
+    case "linux":
+      binaryName =
+        arch === "arm64" ? "xypcli-linux-arm64" : "xypcli-linux-amd64";
       break;
-    case 'win32':
-      osName = 'windows';
-      binaryName = arch === 'arm' ? 'xypcli-windows-arm.exe' : 'xypcli-windows-amd64.exe';
+    case "win32":
+      binaryName =
+        arch === "arm" ? "xypcli-windows-arm.exe" : "xypcli-windows-amd64.exe";
       break;
     default:
       throw new Error(`Unsupported platform: ${platform}`);
   }
 
-  return { os: osName, arch, binaryName };
+  const downloadUrl = `${SDK_BASE_URL}/${binaryName}`;
+
+  return { platform, arch, binaryName, downloadUrl };
 }
 
-// Download file from URL
+// Download file from URL with redirect handling
 function downloadFile(url, destPath) {
   return new Promise((resolve, reject) => {
-    const protocol = url.startsWith('https:') ? https : http;
-
-    const request = protocol.get(url, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`Failed to download: HTTP ${response.statusCode}`));
+    const downloadWithRedirect = (downloadUrl, redirectCount = 0) => {
+      if (redirectCount > 5) {
+        reject(new Error("Too many redirects"));
         return;
       }
 
-      const file = fs.createWriteStream(destPath);
-      response.pipe(file);
+      const protocol = downloadUrl.startsWith("https:") ? https : http;
 
-      file.on('finish', () => {
-        file.close();
-        resolve();
-      });
+      const request = protocol.get(
+        downloadUrl,
+        {
+          headers: {
+            "User-Agent": "XyPCLI-Installer",
+          },
+        },
+        (response) => {
+          // Handle redirects
+          if (
+            response.statusCode === 301 ||
+            response.statusCode === 302 ||
+            response.statusCode === 307 ||
+            response.statusCode === 308
+          ) {
+            const redirectUrl = response.headers.location;
+            if (redirectUrl) {
+              info(`Following redirect to: ${redirectUrl}`);
+              downloadWithRedirect(redirectUrl, redirectCount + 1);
+              return;
+            }
+          }
 
-      file.on('error', (err) => {
+          if (response.statusCode !== 200) {
+            reject(
+              new Error(`Failed to download: HTTP ${response.statusCode}`)
+            );
+            return;
+          }
+
+          const file = fs.createWriteStream(destPath);
+          response.pipe(file);
+
+          file.on("finish", () => {
+            file.close();
+            resolve();
+          });
+
+          file.on("error", (err) => {
+            fs.unlink(destPath, () => {}); // Delete the file on error
+            reject(err);
+          });
+        }
+      );
+
+      request.on("error", (err) => {
         fs.unlink(destPath, () => {}); // Delete the file on error
         reject(err);
       });
-    });
 
-    request.on('error', (err) => {
-      fs.unlink(destPath, () => {}); // Delete the file on error
-      reject(err);
-    });
+      // Set a longer timeout for larger files
+      request.setTimeout(120000, () => {
+        // 2 minutes
+        request.destroy();
+        reject(new Error("Download timeout (2 minutes)"));
+      });
+    };
 
-    // Set a timeout
-    request.setTimeout(30000, () => {
-      request.destroy();
-      reject(new Error('Download timeout'));
-    });
+    downloadWithRedirect(url);
   });
 }
 
 // Make binary executable (Unix-like systems)
 function makeExecutable(filePath) {
-  if (os.platform() !== 'win32') {
+  if (os.platform() !== "win32") {
     try {
-      fs.chmodSync(filePath, '755');
+      fs.chmodSync(filePath, "755");
     } catch (err) {
       // Ignore chmod errors on some systems
     }
@@ -125,7 +160,10 @@ function makeExecutable(filePath) {
 // Get the binary installation path
 function getBinaryPath() {
   // Use the same directory as this script
-  return path.join(__dirname, 'xypcli' + (os.platform() === 'win32' ? '.exe' : ''));
+  return path.join(
+    __dirname,
+    "xypcli" + (os.platform() === "win32" ? ".exe" : "")
+  );
 }
 
 // Check if binary already exists and is working
@@ -147,61 +185,68 @@ function isBinaryInstalled() {
 // Main installation function
 async function install() {
   try {
-    info('XyPriss CLI Installer');
-    info('Detecting platform...');
+    info("XyPriss CLI Installer");
+    info("Detecting platform...");
 
-    const { os: osName, arch, binaryName } = detectPlatform();
-    info(`Platform detected: ${osName}/${arch}`);
+    const { platform, arch, binaryName, downloadUrl } = detectPlatform();
+    info(`Platform detected: ${platform}/${arch}`);
     info(`Binary to download: ${binaryName}`);
 
     // Check if binary is already installed
     if (isBinaryInstalled()) {
-      success('XyPCLI is already installed and working!');
+      success(
+        "XyPCLI is already installed and working! Run `xypcli --help` or using the alias `xyp --help` to get started."
+      );
       return;
     }
 
     const binaryPath = getBinaryPath();
 
-    // Get latest release information from GitHub
-    info('Fetching latest release information...');
-
-    const releaseInfo = await new Promise((resolve, reject) => {
-      https.get(GITHUB_API_URL, {
-        headers: {
-          'User-Agent': 'XyPCLI-Installer'
-        }
-      }, (response) => {
-        if (response.statusCode !== 200) {
-          reject(new Error(`Failed to fetch release info: HTTP ${response.statusCode}`));
-          return;
-        }
-
-        let data = '';
-        response.on('data', (chunk) => data += chunk);
-        response.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (err) {
-            reject(new Error('Failed to parse release info'));
-          }
-        });
-      }).on('error', reject);
-    });
-
-    // Find the correct asset
-    const asset = releaseInfo.assets.find(a => a.name === binaryName);
-    if (!asset) {
-      error(`Binary ${binaryName} not found in latest release`);
-      error('Available assets:');
-      releaseInfo.assets.forEach(a => console.log(`  - ${a.name}`));
-      process.exit(1);
-    }
-
-    const downloadUrl = asset.browser_download_url;
     info(`Downloading from: ${downloadUrl}`);
+    info("This may take a few moments...");
 
-    // Download the binary
-    await downloadFile(downloadUrl, binaryPath);
+    // Download the binary with retry logic
+    let downloadAttempts = 0;
+    const maxAttempts = 3;
+
+    while (downloadAttempts < maxAttempts) {
+      try {
+        downloadAttempts++;
+        if (downloadAttempts > 1) {
+          info(`Retry attempt ${downloadAttempts}/${maxAttempts}...`);
+        }
+
+        await downloadFile(downloadUrl, binaryPath);
+        // Rename the downloaded file to the expected name
+        const expectedName =
+          "xypcli" + (os.platform() === "win32" ? ".exe" : "");
+        const expectedPath = path.join(__dirname, expectedName);
+        if (binaryPath !== expectedPath) {
+          fs.renameSync(binaryPath, expectedPath);
+        }
+        break; // Success, exit retry loop
+      } catch (downloadError) {
+        if (downloadAttempts >= maxAttempts) {
+          error(
+            `Download failed after ${maxAttempts} attempts: ${downloadError.message}`
+          );
+          console.log("");
+          console.log("💡 Troubleshooting tips:");
+          console.log("  1. Check your internet connection");
+          console.log("  2. Try again in a few minutes");
+          console.log("  3. Download manually from:");
+          console.log(`     ${downloadUrl}`);
+          console.log(`     Save as: ${binaryPath}`);
+          console.log("  4. Then re-run: npm install -g xypriss-cli");
+          process.exit(1);
+        } else {
+          info(
+            `Download attempt ${downloadAttempts} failed, retrying in 3 seconds...`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 3000));
+        }
+      }
+    }
 
     // Make executable on Unix-like systems
     makeExecutable(binaryPath);
@@ -211,13 +256,14 @@ async function install() {
 
     // Test the installation
     try {
-      const version = execSync(`"${binaryPath}" --version`, { encoding: 'utf8' }).trim();
+      const version = execSync(`"${binaryPath}" --version`, {
+        encoding: "utf8",
+      }).trim();
       success(`Installation verified: ${version}`);
     } catch (err) {
-      error('Installation verification failed');
+      error("Installation verification failed");
       throw err;
     }
-
   } catch (err) {
     error(err.message);
     process.exit(1);
@@ -237,28 +283,28 @@ if (require.main === module) {
     const binaryPath = getBinaryPath();
 
     if (!isBinaryInstalled()) {
-      log('XyPCLI not found. Installing...');
+      log("XyPCLI not found. Installing...");
       install().then(() => {
         // After installation, execute the CLI with the provided arguments
-        const { spawn } = require('child_process');
+        const { spawn } = require("child_process");
         const child = spawn(binaryPath, args, {
-          stdio: 'inherit',
-          shell: true
+          stdio: "inherit",
+          shell: true,
         });
 
-        child.on('exit', (code) => {
+        child.on("exit", (code) => {
           process.exit(code);
         });
       });
     } else {
       // CLI is already installed, execute it directly
-      const { spawn } = require('child_process');
+      const { spawn } = require("child_process");
       const child = spawn(binaryPath, args, {
-        stdio: 'inherit',
-        shell: true
+        stdio: "inherit",
+        shell: true,
       });
 
-      child.on('exit', (code) => {
+      child.on("exit", (code) => {
         process.exit(code);
       });
     }

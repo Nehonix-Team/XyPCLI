@@ -22,7 +22,7 @@ npm install -g xypriss-cli
 npx xypriss-cli init
 ```
 
-The CLI will automatically detect your platform (Linux, macOS, Windows) and download the appropriate binary from GitHub releases on first use. No need to worry about platform-specific installations!
+The CLI will automatically detect your platform (Linux, macOS, Windows) and download the appropriate binary from the Nehonix SDK on first use. No need to worry about platform-specific installations!
 
 ### From Source
 
