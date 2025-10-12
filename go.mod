@@ -1,4 +1,4 @@
-module github.com/Nehonix-Team/XyPriss/tools/XyPCLI
+module github.com/Nehonix-Team/XyPCLI
 
 go 1.21
 

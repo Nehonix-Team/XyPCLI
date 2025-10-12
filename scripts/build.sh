@@ -88,9 +88,21 @@ for platform in "${PLATFORMS[@]}"; do
     export GOARCH=$GOARCH
     export CGO_ENABLED=0
 
-    # Build the binary
+    # Build the binary with size optimizations
     if go build -ldflags="-s -w" -o "$output_name" .; then
         print_success "Built $output_name"
+
+        # Compress with UPX if available
+        if command -v upx &> /dev/null; then
+            print_status "Compressing $output_name with UPX..."
+            if upx --best "$output_name"; then
+                print_success "Compressed $output_name"
+            else
+                print_warning "UPX compression failed for $output_name, keeping uncompressed binary"
+            fi
+        else
+            print_warning "UPX not found, skipping compression for $output_name"
+        fi
     else
         print_error "Failed to build for $GOOS/$GOARCH"
         exit 1
