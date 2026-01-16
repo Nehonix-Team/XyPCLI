@@ -15,7 +15,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-SDK_BASE_URL="https://sdk.nehonix.space/dl/mds/xypriss/bin"
+SDK_BASE_URL="https://dll.nehonix.com/dl/mds/xypriss/bin"
 CLI_NAME="xypcli"
 TEMP_DIR="/tmp/xypriss-cli-install"
 INSTALL_DIR="${HOME}/.local/bin"

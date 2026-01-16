@@ -4,11 +4,14 @@ A powerful CLI tool for initializing and managing XyPriss projects with ease.
 
 ## Features
 
--   🚀 **Project Initialization** - Create new XyPriss projects with interactive setup
--   📦 **Template Management** - Download and extract project templates automatically
--   ⚙️ **Configuration** - Customize projects with authentication, file upload, and multi-server support
--   🏃 **Development Server** - Start development servers with a single command
--   🔧 **Dependency Management** - Automatic installation of required dependencies
+- 🚀 **Project Initialization** - Create new XyPriss projects with interactive setup or CLI shortcuts
+- ⚡ **Parallel Installation** - Ultra-fast package installation with intelligent parallelization
+- 📦 **Template Management** - Download and extract project templates automatically
+- 🔧 **Multiple Package Install** - Install multiple packages at once with `xypcli install pkg1 pkg2 pkg3`
+- ⚙️ **Configuration** - Customize projects with authentication, file upload, and multi-server support
+- 🏃 **Development Server** - Start development servers with a single command
+- 🎯 **Installation Mode Control** - Choose between npm and bun with `--mode` flag
+- 💨 **CLI Shortcuts** - Skip interactive prompts with command-line flags
 
 ## Installation
 
@@ -58,6 +61,8 @@ The binary itself is still called `xypcli` for brevity in daily use, but the pac
 
 ### Initialize a New Project
 
+#### Interactive Mode (Classic)
+
 ```bash
 xypcli init
 ```
@@ -68,6 +73,54 @@ This command will:
 2. Download the latest project template
 3. Extract and customize the template
 4. Install dependencies automatically
+
+#### Quick Init with CLI Shortcuts
+
+```bash
+# Quick init with just name and port
+xypcli init --name my-app --port 8080
+
+# Full non-interactive initialization
+xypcli init --name my-api --desc "My awesome API" --lang ts --port 3000 --author "John Doe"
+
+# Force npm installation (skip bun)
+xypcli init --name my-app --mode n
+
+# Force bun installation
+xypcli init --name my-app --mode b
+```
+
+**Available Init Flags:**
+
+- `--name <name>` - Project name
+- `--desc <description>` - Project description
+- `--lang <js|ts>` - Programming language (default: ts)
+- `--port <port>` - Server port (default: 3000)
+- `--version <version>` - Application version (default: 1.0.0)
+- `--alias <alias>` - Application alias (default: XyP)
+- `--author <author>` - Author name (default: Nehonix-Team)
+- `--mode <b|n>` - Installation mode: 'b' for bun, 'n' for npm (default: auto)
+
+### Install Packages
+
+#### Single Package
+
+```bash
+xypcli install express
+```
+
+#### Multiple Packages (with Parallel Installation)
+
+```bash
+# Install multiple packages at once - they install in parallel!
+xypcli install express cors body-parser dotenv
+
+# Install with specific mode
+xypcli install express cors --mode b  # Use bun
+xypcli install express cors --mode n  # Use npm
+```
+
+**Performance:** Installing multiple packages uses intelligent parallelization (up to 4 concurrent installations) for dramatically faster installation times!
 
 ### Start Development Server
 
@@ -97,12 +150,12 @@ xypcli --help
 
 When initializing a new project, you'll be prompted to configure:
 
--   **Project Name** - The name of your project
--   **Description** - A brief description of your project
--   **Port** - The port number for the server (default: 3000)
--   **Authentication** - Include JWT-based authentication system
--   **File Upload** - Include file upload functionality with multer
--   **Multi-Server** - Include multi-server configuration
+- **Project Name** - The name of your project
+- **Description** - A brief description of your project
+- **Port** - The port number for the server (default: 3000)
+- **Authentication** - Include JWT-based authentication system
+- **File Upload** - Include file upload functionality with multer
+- **Multi-Server** - Include multi-server configuration
 
 ## Project Structure
 
@@ -163,16 +216,16 @@ go build -o xypcli main.go
 
 The CLI uses the following template sources:
 
--   **Production**: `https://sdk.nehonix.space/dl/mds/xypriss/templates/initdr.zip`
--   **Local Development**: `./templates.zip` (relative to CLI binary)
+- **Production**: `https://dll.nehonix.com/dl/mds/xypriss/templates/initdr.zip`
+- **Local Development**: `./templates.zip` (relative to CLI binary)
 
 ### Build Configuration
 
 The `build.sh` script creates a clean zip file excluding:
 
--   `node_modules/` directories
--   Log files
--   System files
+- `node_modules/` directories
+- Log files
+- System files
 
 ## Contributing
 
@@ -188,6 +241,6 @@ This project is licensed under the MIT License - see the [LICENSE](../../LICENSE
 
 ## Support
 
--   📖 [XyPriss Documentation](https://github.com/Nehonix-Team/XyPriss)
--   🐛 [Issue Tracker](https://github.com/Nehonix-Team/XyPriss/issues)
--   💬 [Discussions](https://github.com/Nehonix-Team/XyPriss/discussions)
+- 📖 [XyPriss Documentation](https://github.com/Nehonix-Team/XyPriss)
+- 🐛 [Issue Tracker](https://github.com/Nehonix-Team/XyPriss/issues)
+- 💬 [Discussions](https://github.com/Nehonix-Team/XyPriss/discussions)

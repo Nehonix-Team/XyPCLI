@@ -1,0 +1,14 @@
+{
+  "__sys__": {
+    "__PORT__": 7386,
+    "__alias__": "test",
+    "__author__": "iDevo",
+    "__name__": "test",
+    "__port__": 7386,
+    "__version__": "1.1.9",
+    "__app_urls__": {
+      "test": "ok"
+    }
+
+  }
+}

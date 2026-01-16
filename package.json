@@ -1,6 +1,6 @@
 {
   "name": "xypriss-cli",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "XyPriss CLI - Command-line tool for XyPriss framework project initialization and management",
   "main": "index.js",
   "bin": {
@@ -27,8 +27,8 @@
   ],
   "author": {
     "name": "Nehonix",
-    "email": "contact@nehonix.space",
-    "url": "https://nehonix.space"
+    "email": "contact@nehonix.com",
+    "url": "https://nehonix.com"
   },
   "license": "MIT",
   "repository": {

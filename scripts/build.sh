@@ -96,6 +96,7 @@ for platform in "${PLATFORMS[@]}"; do
         if command -v upx &> /dev/null; then
             print_status "Compressing $output_name with UPX..."
             if upx --best "$output_name"; then
+            # if upx "$output_name"; then
                 print_success "Compressed $output_name"
             else
                 print_warning "UPX compression failed for $output_name, keeping uncompressed binary"

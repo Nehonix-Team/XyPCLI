@@ -15,7 +15,7 @@ const os = require("os");
 const { execSync } = require("child_process");
 
 // Nehonix SDK download URLs
-const SDK_BASE_URL = "https://sdk.nehonix.space/dl/mds/xypriss/bin/xypcli";
+const SDK_BASE_URL = "https://dll.nehonix.com/dl/mds/xypriss/bin/xypcli";
 
 // Colors for output
 const colors = {
